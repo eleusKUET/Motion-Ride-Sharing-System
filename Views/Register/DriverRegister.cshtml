@@ -1,0 +1,137 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Register as a driver - Motion</title>
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/Motion.styles.css" asp-append-version="true" />
+</head>
+<body style="font-family:'Trebuchet MS', 'Lucida Sans Unicode', 'Lucida Grande', 'Lucida Sans', Arial, sans-serif">
+    <header>
+        <nav class="navbar navbar-expand-sm navbar-toggleable-sm navbar-dark bg-black border-bottom box-shadow mb-3">
+            <div class="container-fluid">
+                <a class="navbar-brand" asp-area="" asp-controller="Home" asp-action="Index" style="font-size:35px">Motion</a>
+               
+            </div>
+        </nav>
+    </header>
+    <div class="container" >
+        <main role="main" class="pb-lg-5">
+            <div class="card" style="margin-left:20%; margin-right:20%; margin-top:5%;margin-bottom:5%">
+                <div class="card-header">
+                    <img src="~/images/dollar.png" style="width:4%; height:4%" />
+                    <h5>Earn with Motion</h5>
+                </div>
+                <div class="card-body">
+                        <div class="mb-3">
+                            <input id="Name" type="text" class="form-control" placeholder="Enter your name" style="background-color:#f2f2f2; border:none" onfocus="this.style.border='solid'; this.style.borderWidth='1px'" onblur="this.style.border='none'">
+                        </div>
+                        <div class="mb-3">
+                            <input id="Email" type="text" class="form-control" placeholder="Enter your email" style="background-color:#f2f2f2; border:none" onfocus="this.style.border='solid'; this.style.borderWidth='1px'" onblur="this.style.border='none'">
+                        </div>
+                        <div class="mb-3">
+                            <input id="Phone" type="text" class="form-control" placeholder="Enter your phone number (ex:+XX01XXXXXXXXX)" style="background-color:#f2f2f2; border:none" onfocus="this.style.border='solid'; this.style.borderWidth='1px'" onblur="this.style.border='none'">
+                        </div>
+                        <div class="mb-3">
+                            <input id="Password" type="password" class="form-control" placeholder="Enter your password" style="background-color:#f2f2f2; border:none" onfocus="this.style.border='solid'; this.style.borderWidth='1px'" onblur="this.style.border='none'">
+                        </div>
+                        <div class="mb-3">
+                            <select id="vehicle" class="form-select" style="background-color:#f2f2f2; border:none" onfocus="this.style.border='solid'; this.style.borderWidth='1px'" onblur="this.style.border='none'">
+                                <option value="default_vehicle" selected>Choose your vehicle</option>
+                                <option value="car">Car</option>
+                                <option value="big_car">CarXL</option>
+                                <option value="moto">Motor Cycle</option>
+                                <option value="cng">CNG</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <input id="plate" type="text" class="form-control" placeholder="Enter your vehicle's license plate" style="background-color:#f2f2f2; border:none" onfocus="this.style.border='solid'; this.style.borderWidth='1px'" onblur="this.style.border='none'">
+                        </div>
+                        <button id="reg_btn" onclick="send_reg_info()" type="submit" class="btn btn-dark" style="width:100%;font-weight:bold;background-color:black;font-size:18px">Register as a driver</button>
+                </div>
+                <div class="card-footer text-body-secondary" style="color:#808080">
+                    By proceeding, you consent to get calls, WhatsApp or SMS messages, including by automated means, from Motion and its affiliates to the number provided.
+                </div>
+            </div>
+        </main>
+    </div>
+    <script type="text/javascript">
+        function send_reg_info() {
+            var pass = document.getElementById("Password").value;
+            console.log("password");
+            console.log(pass);
+            if (pass.length == 0) {
+                alert("Password can not be blank.");
+                return;
+            }
+            pass = getHash(pass);
+            console.log(pass);
+            disable_button();
+            var driver_register = {
+                Name: document.getElementById("Name").value,
+                Email: document.getElementById("Email").value,
+                Phone_Number:document.getElementById("Phone").value,
+                Password: pass,
+                Vehicle_type:document.getElementById("vehicle").value,
+                License_plate:document.getElementById("plate").value
+            };
+            var driver_register_form = {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(driver_register)
+            };
+
+            fetch("https://localhost:7092/Register/DriverRegister", driver_register_form)
+                .then(function (response) {
+                    return response.json();
+                })
+                .then(function (data) {
+                    console.log("server data:");
+                    console.log(data);
+                    enable_button();
+                    if (data.message == "ok") {
+                        alert("Your registration is successful.");
+                        window.location.href = "https://localhost:7092";
+                    }
+                    else if (data.message == "in_em") {
+                        alert("Your email is invalid.");
+                    }
+                    else if (data.message == "in_pn") {
+                        alert("Your phone number is invalid.");
+                    }
+                    else if (data.message == "empty") {
+                        alert("Some fields are empty.");
+                    }
+                    else if (data.message == "ex_em") {
+                        alert("Your email is already in use.");
+                    }
+                    else if (data.message == "ex_pn") {
+                        alert("Your phone number is already in use.");
+                    }
+                });
+        }
+        function disable_button() {
+            var btn = document.getElementById("reg_btn");
+            btn.classList.add("disabled");
+            btn.innerHTML = '<span class="spinner-border spinner-border-lg" role="status" aria-hidden="true"></span>&nbsp;&nbsp;&nbsp;Registering...';
+        }
+        function enable_button() {
+            var btn = document.getElementById("reg_btn");
+            btn.classList.remove("disabled");
+            btn.innerHTML = 'Register as a driver';
+        }
+        function getHash(data) {
+            const hash = CryptoJS.SHA256(data).toString();
+            return hash; // Outputs the hashed value
+        }
+    </script>
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="~/js/site.js" asp-append-version="true"></script>
+</body>
+</html>

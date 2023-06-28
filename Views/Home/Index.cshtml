@@ -1,0 +1,108 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Home Page - Motion</title>
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/Motion.styles.css" asp-append-version="true"/>
+    
+</head>
+<body style="font-family:'Trebuchet MS', 'Lucida Sans Unicode', 'Lucida Grande', 'Lucida Sans', Arial, sans-serif">
+    <header>
+        <nav class="navbar navbar-expand-sm navbar-toggleable-sm navbar-dark bg-black border-bottom box-shadow mb-3">
+            <div class="container-fluid">
+                <a class="navbar-brand" asp-area="" asp-controller="Home" asp-action="Index" style="font-size:35px">Motion</a>
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target=".navbar-collapse" aria-controls="navbarSupportedContent"
+                        aria-expanded="false" aria-label="Toggle navigation">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+                <div class="navbar-collapse collapse d-sm-inline-flex justify-content-between">
+                    <ul class="navbar-nav flex-grow-1 justify-content-end">
+                        <li class="nav-item">
+                            <a class="nav-link active text-white" asp-area="" asp-controller="Home" asp-action="Index" style="font-size:18px">Home</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link active text-white" asp-area="" asp-controller="Driver" asp-action="Index" style="font-size:18px">Drive</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link active text-white" asp-area="" asp-controller="Rider" asp-action="Index" style="font-size:18px">Ride</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="active btn btn-outline-light text-dark" asp-area="" asp-controller="Login" asp-action="Index" style="font-size:18px">Log in</a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </nav>
+    </header>
+    <div class="container row" style="margin-bottom:-150px;background-color:whitesmoke;margin-top:-20px;margin-right:-60px">
+        <div class="col justify-content-between" style="width:100%;height:30%;">
+            <h1 style="font-size:60px;font-weight:bold;margin:60px">Log in to access your account</h1>
+        </div>
+        <div class="col" style="width:100%;height:30%;margin-top:-15px;margin-right:-10px">
+            <img src="~/images/Signup.svg" alt="Log in" style="margin-left:33%;width:100%;height:400px"/>
+        </div>
+    </div>
+    <div class="d-flex align-items-center">
+        <div class="card" style="margin-top:18%;margin-left:10%;margin-right:5%">
+            <a asp-for="" asp-controller="Register" asp-action="DriverRegister" class="btn btn-outline-dark" style="font-size:35px;font-family:'Trebuchet MS', 'Lucida Sans Unicode', 'Lucida Grande', 'Lucida Sans', Arial, sans-serif;font-weight:bold">
+                <span>Sign up to drive &amp; deliver</span>
+                <img src="~/images/rightarrowcircle.png" alt="Right Arrow" style="width:65px;height:65px"> 
+            </a>
+        </div>
+        <div class="card" style="margin-top:18%;margin-left:3%;margin-right:5%">
+            <a asp-for="" asp-controller="Register" asp-action="RiderRegister" class="btn btn-outline-dark" style="font-size:35px;font-family:'Trebuchet MS', 'Lucida Sans Unicode', 'Lucida Grande', 'Lucida Sans', Arial, sans-serif;font-weight:bold">
+                <span>Create a rider account</span>
+                <img src="~/images/rightarrowcircle.png" alt="Right Arrow" style="width:65px;height:65px">
+            </a>
+        </div>
+    </div>
+    <script type="text/javascript">
+        function readCookie(cookieName) {
+            var name = cookieName + "=";
+            var decodedCookie = decodeURIComponent(document.cookie);
+            var cookieArray = decodedCookie.split(';');
+
+            for (var i = 0; i < cookieArray.length; i++) {
+                var cookie = cookieArray[i];
+                while (cookie.charAt(0) === ' ') {
+                    cookie = cookie.substring(1);
+                }
+                if (cookie.indexOf(name) === 0) {
+                    return cookie.substring(name.length, cookie.length);
+                }
+            }
+            return "";
+        }
+        function isCookieExpired(cookieName) {
+            var cookie = document.cookie.split(';').find(function (cookie) {
+                return cookie.trim().startsWith(cookieName + "=");
+            });
+
+            if (cookie) {
+                var cookieValue = cookie.split('=')[1];
+                var expirationDate = new Date(cookieValue);
+                var currentDate = new Date();
+
+                return expirationDate < currentDate;
+            }
+
+            return true; // If cookie is not found, assume it's expired
+        }
+        if (!isCookieExpired("usertype")) {
+            var type = readCookie("usertype");
+            if (type == "rider") {
+                window.location = "https://localhost:7092/Rider";
+            }
+            else {
+                window.location = "https://localhost:7092/Driver";
+            }
+        }
+    </script>
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="~/js/site.js" asp-append-version="true"></script>
+</body>
+</html>

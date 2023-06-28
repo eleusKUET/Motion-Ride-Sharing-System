@@ -1,0 +1,457 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Ride - Motion</title>
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/Motion.styles.css" asp-append-version="true" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.css" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    <script src="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.js"></script>
+
+    <link rel="stylesheet" href="~/css/AddressAutoComplete.css"/>
+    
+    <link rel="stylesheet" href="~/css/GeoCode.css" />
+    <script src="~/js/GeoCode.js"> </script>
+    <link rel="stylesheet" href="~/css/ReverseGeoCode.css" />
+    <script src="~/js/ReverseGeoCode.js"> </script>
+    <script src="~/js/AddressAutoComplete.js"> </script>
+    <script src="~/js/currentlocation.js"> </script>
+    <script src="~/js/Marker.js"> </script>
+    <script src="~/js/route.js"> </script>
+</head>
+<body style="font-family:'Trebuchet MS', 'Lucida Sans Unicode', 'Lucida Grande', 'Lucida Sans', Arial, sans-serif">
+    <header>
+        <nav class="navbar navbar-expand-sm navbar-toggleable-sm navbar-dark bg-black border-bottom box-shadow mb-3" style="width:100%">
+            <div class="container-fluid">
+                <a class="navbar-brand" asp-area="" asp-controller="Home" asp-action="Index" style="font-size:35px">Motion</a>
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target=".navbar-collapse" aria-controls="navbarSupportedContent"
+                        aria-expanded="false" aria-label="Toggle navigation">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+                <div class="navbar-collapse collapse d-sm-inline-flex justify-content-between">
+                    <ul class="navbar-nav flex-grow-1 justify-content-end">
+                        <li class="nav-item">
+                            <a id="show_name" class="nav-link active text-white" href="~/Rider/Index" style="font-size:18px"></a>
+                        </li>
+                        <li class="nav-item">
+                            <button id="in_out" onclick="do_logout()" class="btn btn-primary" style="font-size:18px">Log out</button>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    <div class="row">
+        <div class="col-sm-6 mb-3 mb-sm-0">
+            <div class="card" style="margin-left:4%">
+                <div class="card-header">
+                    <h5>Ride</h5>
+                </div>
+                <div class="card-body">
+                    
+                        <div class="autocomplete-container" id="autocomplete-container1"></div>
+                        <input type="hidden" id="pickupLat"/>
+                        <input type="hidden" id="pickupLon"/>
+
+                        <div class="autocomplete-container" id="autocomplete-container2"></div>
+                        <input type="hidden" id="destLat"/>
+                        <input type="hidden" id="destLon"/>
+                        <button id="reg_btn" type="submit" class="btn btn-dark" onclick="showRides()">Find available</button>
+                    
+                    <script type="text/javascript">
+                        let pickupMarker;
+                        let routingControl;
+                        let remove_route;
+                        addressAutocomplete(document.getElementById("autocomplete-container1"), (data) => {
+                            console.log("pickup data: ");
+                            console.log(data);
+                            let pLat = document.getElementById("pickupLat").value;
+                            let pLon = document.getElementById("pickupLon").value;
+                            let dLat = document.getElementById("destLat").value;
+                            let dLon = document.getElementById("destLon").value;
+
+                            if (data) {
+                                document.getElementById("pickupLat").value = data.bbox.lat2;
+                                document.getElementById("pickupLon").value = data.bbox.lon2;
+                            }
+                            if (pickupMarker) {
+                                pickupMarker.remove();
+                            }
+                            if (data) {
+                                pickupMarker = L.marker(new L.LatLng(data.bbox.lat2, data.bbox.lon2)).addTo(map);
+                                indicateThisLocation(data.bbox.lat2, data.bbox.lon2);
+                            }
+                            pLat = document.getElementById("pickupLat").value;
+                            pLon = document.getElementById("pickupLon").value;
+                            dLat = document.getElementById("destLat").value;
+                            dLon = document.getElementById("destLon").value;
+                            
+                            if (pLat && pLon && dLat && dLon) {
+                                let from = [pLat, pLon];
+                                let To = [dLat, dLon];
+                                console.log(routingControl);
+                                //map = L.map('my-map').setView([48.1500327, 11.5753989], 15);
+                                if (routingControl) {
+                                    remove_route = function () {
+                                        leafletData.getMap().then(function (map) {
+                                            map.removeControl(routingControl);
+                                        });
+                                    };
+                                }
+                                routingControl = L.Routing.control({
+                                    waypoints: [
+                                        L.latLng(from[0], from[1]),
+                                        L.latLng(To[0], To[1])
+                                    ],
+                                    routeWhileDragging: true
+                                }).addTo(map);
+                            }
+                        }, {
+                        placeholder: "Add a pickup location"
+                        });
+                        let destMarker;
+                        addressAutocomplete(document.getElementById("autocomplete-container2"), (data) => {
+                            console.log("destination data: ");
+                            console.log(data);
+                            let pLat = document.getElementById("pickupLat").value;
+                            let pLon = document.getElementById("pickupLon").value;
+                            let dLat = document.getElementById("destLat").value;
+                            let dLon = document.getElementById("destLon").value;
+                            
+                            if (data) {
+                                document.getElementById("destLat").value = data.bbox.lat2;
+                                document.getElementById("destLon").value = data.bbox.lon2;
+                            }
+                            if (destMarker) {
+                                destMarker.remove();
+                            }
+                            if (data) {
+                                destMarker = L.marker(new L.LatLng(data.bbox.lat2, data.bbox.lon2)).addTo(map);
+                                indicateThisLocation(data.bbox.lat2, data.bbox.lon2);
+                            }
+                            pLat = document.getElementById("pickupLat").value;
+                            pLon = document.getElementById("pickupLon").value;
+                            dLat = document.getElementById("destLat").value;
+                            dLon = document.getElementById("destLon").value;
+
+                            if (pLat && pLon && dLat && dLon) {
+                                let from = [pLat, pLon];
+                                let To = [dLat, dLon];
+                                console.log(routingControl);
+                                //map = L.map('my-map').setView([48.1500327, 11.5753989], 15);
+                                if (routingControl) {
+                                    remove_route = function () {
+                                        leafletData.getMap().then(function (map) {
+                                            map.removeControl(routingControl);
+                                        });
+                                    };
+                                }
+                                routingControl = L.Routing.control({
+                                    waypoints: [
+                                        L.latLng(from[0], from[1]),
+                                        L.latLng(To[0], To[1])
+                                    ],
+                                    routeWhileDragging: true
+                                }).addTo(map);
+                            }
+                        }, {
+                            placeholder: "Enter your destination"
+                        });
+                    </script>
+                </div>
+                <div class="card-footer text-body-secondary" style="color:#808080" id="rideinfo">
+
+                </div>
+                <script type="text/javascript">
+                    function clearCard() {
+                        let cardContainer = document.getElementById("rideinfo");
+                        while (cardContainer.firstChild) {
+                            cardContainer.removeChild(cardContainer.firstChild);
+                        }
+                    }
+
+                    function disable_button() {
+                        var btn = document.getElementById("reg_btn");
+                        btn.classList.add("disabled");
+                    }
+                    function enable_button() {
+                        var btn = document.getElementById("reg_btn");
+                        btn.classList.remove("disabled");
+                    }
+                    function waiting() {
+                        let cardContainer = document.getElementById("rideinfo");
+                        cardContainer.innerHTML = '<span class="spinner-border spinner-border-lg" role="status" aria-hidden="true"></span>&nbsp;&nbsp;&nbsp;Waiting for confirmation...';
+                    }
+
+                    function requestConfirmed(Contact) {
+                        let cardContainer = document.getElementById("rideinfo");
+                        cardContainer.innerHTML = '<h5> Request confirmed. Your driver is arriving soon </h5><h5> Contact: ' + Contact + '</h5>';
+                    }
+
+                    function requestCenceled() {
+                        let cardContainer = document.getElementById("rideinfo");
+                        cardContainer.innerHTML = '<h5> Your request is cenceled </h5>';
+                    }
+
+                    function sendRequest(DriverId) {
+                        var req = {
+                            rid : readCookie("userid"),
+                            did : DriverId,
+                            SLatitude: document.getElementById("pickupLat").value,
+                            SLongitude: document.getElementById("pickupLon").value,
+                            ELatitude: document.getElementById("destLat").value,
+                            ELongitude: document.getElementById("destLon").value,
+                            status:'available'
+                        };
+                        var req_form = {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify(req)
+                        };
+                        console.log("req");
+                        console.log(req);
+                        fetch("https://localhost:7092/Rider/SendRequest", req_form)
+                        .then(function(response){
+                            return response.json();
+                        })
+                        .then(function(data){
+                            console.log("req send");
+                            console.log(data);
+                        });
+                    }
+
+                    function clearRequest(DriverId) {
+                        var req = {
+                            rid: readCookie("userid"),
+                            did: DriverId,
+                            SLatitude: document.getElementById("pickupLat").value,
+                            SLongitude: document.getElementById("pickupLon").value,
+                            ELatitue: document.getElementById("destLat").value,
+                            ELongitude: document.getElementById("destLon").value,
+                            status: 'available'
+                        };
+                        var req_form = {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify(req)
+                        };
+                        fetch("https://localhost:7092/Rider/ClearRequest", req_form)
+                            .then(function (response) {
+                                return response.json();
+                            })
+                            .then(function (data) {
+                                console.log("req send");
+                                console.log(data);
+                            });
+                    }
+
+                    var requestStatusId;
+                    
+                    function requestStatus(DriverId) {
+                        var req = {
+                            rid: readCookie("userid"),
+                            did: DriverId,
+                            SLatitude: document.getElementById("pickupLat").value,
+                            SLongitude: document.getElementById("pickupLon").value,
+                            ELatitue: document.getElementById("destLat").value,
+                            ELongitude: document.getElementById("destLon").value,
+                            status: 'available'
+                        };
+                        var req_form = {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify(req)
+                        };
+                        fetch("https://localhost:7092/Rider/RequestStatus", req_form)
+                            .then(function (response) {
+                                return response.json();
+                            })
+                            .then(function (data) {
+                                console.log("req send");
+                                console.log(data);
+                                
+                                if (data.message == "confirmed") {
+                                    clearCard();
+                                    requestConfirmed(data.contact);
+                                    clearInterval(requestStatusId);
+                                    clearRequest(DriverId);
+                                }
+                                else if (data.message == "cenceled") {
+                                    clearCard();
+                                    requestCenceled();
+                                    enable_button();
+                                    clearRequest(DriverId);
+                                    clearInterval(requestStatusId);
+                                }
+                            });
+                    }
+
+                    function addCard(vehicle, cardId, DriverId) {
+                        let cardContainer = document.getElementById("rideinfo");
+                        let card = document.createElement("div");
+                        card.setAttribute("class", "card");
+                        card.setAttribute("style", "width: 7rem;float:left;margin-right:8px;margin-top:5px");
+                        let image = document.createElement("img");
+                        image.setAttribute("src", "/images/" + vehicle + ".png");
+                        image.setAttribute("class", "card-img-top");
+                        image.setAttribute("style", "width:100px;height:100px");
+                        let cardbody = document.createElement("div");
+                        cardbody.setAttribute("class", "card-body");
+                        let cardtitle = document.createElement("h5");
+                        cardtitle.setAttribute("class", "card-title");
+                        let cardtext = document.createElement("p");
+                        cardtext.setAttribute("class", "card-text");
+                        
+                        let input = document.createElement("input");
+                        input.setAttribute("type", "hidden");
+                        input.setAttribute("id", "driver_id");
+                        let button = document.createElement("button");
+                        button.setAttribute("id", cardId);
+                        button.setAttribute("class", "btn btn-dark");
+                        button.innerHTML = "Request";
+
+                        button.addEventListener("click", function(){
+                            clearCard();
+                            disable_button();
+                            waiting();
+                            sendRequest(DriverId);
+                            requestStatusId = setInterval(function(){
+                                requestStatus(DriverId);
+                            }, 2000);
+                        });
+
+                        cardtitle.setAttribute("id", cardId + "fare");
+                        cardtext.setAttribute("id", cardId + "time");
+                        cardbody.appendChild(cardtitle);
+                        cardbody.appendChild(cardtext);
+                        cardbody.appendChild(input);
+                        cardbody.appendChild(button);
+                        card.appendChild(image);
+                        card.appendChild(cardbody);
+                        cardContainer.appendChild(card);
+                    }
+
+                    function showRides() {
+                        clearCard();
+                        var rider = {
+                            rid: readCookie("userid"),
+                            did: "",
+                            SLatitude: document.getElementById("pickupLat").value,
+                            SLongitude: document.getElementById("pickupLon").value,
+                            ELatitue: document.getElementById("destLat").value,
+                            ELongitude: document.getElementById("destLon").value,
+                            status: "available"
+                        };
+                        let pLat = document.getElementById("pickupLat").value;
+                        let pLon = document.getElementById("pickupLon").value;
+                        let dLat = document.getElementById("destLat").value;
+                        let dLon = document.getElementById("destLon").value;
+                        if (rider.SLatitude && rider.SLongitude && rider.ELatitue && rider.ELongitude) {
+                            
+                            var riderForm = {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json'
+                                },
+                                body: JSON.stringify(rider)
+                            };
+                           
+                            fetch("https://localhost:7092/Rider/FindRides", riderForm)
+                                .then(function (response) {
+                                    return response.json();
+                                }).then(function (data) {
+                                    console.log(data);
+                                    var cardId = 0;
+                                    for (const element of data) {
+                                        console.log(element);
+                                        if (element.vehicle == "big_car") {
+                                            element.vehicle = "carl"
+                                        }
+                                        addCard(element.vehicle, String(cardId), element.id);
+                                        calTime(String(cardId) + "time", element.lat, element.lng, pLat, pLon);
+                                        calFare(String(cardId) + "fare", pLat, pLon, dLat, dLon, element.vehicle);
+                                        cardId++;
+                                    }
+                                });
+                        }
+                    }
+
+                </script>
+
+            </div>
+        </div>
+        <div class="col-sm-6">
+            <div class="card" style="margin-right:20px;margin-left:20px;margin-top:8px;margin-bottom:20px;width:40vw;height:70vh;position:fixed" id="my-map">
+                    <script src="~/js/Map.js"></script>
+            </div>
+        </div>
+    </div>
+
+    <script type="text/javascript">
+        function readCookie(cookieName) {
+            var name = cookieName + "=";
+            var decodedCookie = decodeURIComponent(document.cookie);
+            var cookieArray = decodedCookie.split(';');
+
+            for (var i = 0; i < cookieArray.length; i++) {
+                var cookie = cookieArray[i];
+                while (cookie.charAt(0) === ' ') {
+                    cookie = cookie.substring(1);
+                }
+                if (cookie.indexOf(name) === 0) {
+                    return cookie.substring(name.length, cookie.length);
+                }
+            }
+            return "";
+        }
+        function isCookieExpired(cookieName) {
+            var cookie = document.cookie.split(';').find(function (cookie) {
+                return cookie.trim().startsWith(cookieName + "=");
+            });
+
+            if (cookie) {
+                var cookieValue = cookie.split('=')[1];
+                var expirationDate = new Date(cookieValue);
+                var currentDate = new Date();
+
+                return expirationDate < currentDate;
+            }
+
+            return true; // If cookie is not found, assume it's expired
+        }
+        if (!isCookieExpired("username")) {
+            var username = readCookie("username");
+            document.getElementById("show_name").innerHTML = username;
+        }
+        else {
+            window.location = "https://localhost:7092";
+        }
+        function deleteCookie(cookieName) {
+            document.cookie = cookieName + "=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+        }
+
+        function do_logout() {
+            deleteCookie("username");
+            deleteCookie("userid");
+            deleteCookie("usertype");
+            window.location = "https://localhost:7092";
+        }
+    </script>
+   
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="~/js/site.js" asp-append-version="true"></script>
+</body>
+</html>

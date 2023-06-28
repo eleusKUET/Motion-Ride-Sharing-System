@@ -1,0 +1,309 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Driving Panel - Motion</title>
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/Motion.styles.css" asp-append-version="true" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/Motion.styles.css" asp-append-version="true" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.css" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    <script src="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.js"></script>
+
+    <link rel="stylesheet" href="~/css/AddressAutoComplete.css"/>
+    
+    <link rel="stylesheet" href="~/css/GeoCode.css" />
+    <script src="~/js/GeoCode.js"> </script>
+    <link rel="stylesheet" href="~/css/ReverseGeoCode.css" />
+    <script src="~/js/ReverseGeoCode.js"> </script>
+    <script src="~/js/AddressAutoComplete.js"> </script>
+    <script src="~/js/currentlocation.js"> </script>
+    <script src="~/js/Marker.js"> </script>
+    <script src="~/js/route.js"> </script>
+</head>
+<body style="font-family:'Trebuchet MS', 'Lucida Sans Unicode', 'Lucida Grande', 'Lucida Sans', Arial, sans-serif">
+    <header>
+        <nav class="navbar navbar-expand-sm navbar-toggleable-sm navbar-dark bg-black border-bottom box-shadow mb-3" style="width:100%">
+            <div class="container-fluid">
+                <a class="navbar-brand" asp-area="" asp-controller="Home" asp-action="Index" style="font-size:35px">Motion</a>
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target=".navbar-collapse" aria-controls="navbarSupportedContent"
+                        aria-expanded="false" aria-label="Toggle navigation">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+                <div class="navbar-collapse collapse d-sm-inline-flex justify-content-between">
+                    <ul class="navbar-nav flex-grow-1 justify-content-end">
+                        <li class="nav-item">
+                            <a id="show_name" class="nav-link active text-white" href="~/Driver/Index" style="font-size:18px"></a>
+                        </li>
+                        <li class="nav-item">
+                            <button id="in_out" onclick="do_logout()" class="btn btn-primary" style="font-size:18px">Log out</button>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </nav>
+    </header>
+    <div class="row">
+      <div class="col-sm-6 mb-3 mb-sm-0">
+          <div class="card" style="margin-left:20%; margin-right:20%; margin-top:5%;margin-bottom:5%">
+                <div class="card-header">
+                    <h5>Driver Dashboard</h5>
+                    <span class="spinner-border"></span>
+                </div>
+                <div class="card-body" id="dashboard">
+                   <h5> You have no ride request </h5>
+                </div>
+                <script type="text/javascript">
+                    let driver_marker;
+                    let driver_position = {
+                        
+                        lat: 0,
+                        lon: 0
+                    };
+                    function setLocation(position) {
+                        driver_position.lat = position.coords.latitude;
+                        driver_position.lon = position.coords.longitude;
+                        if (driver_marker) {
+                            driver_marker.remove();
+                        }
+                        console.log(driver_position);
+                        driver_marker = L.marker(new L.LatLng(driver_position.lat, driver_position.lon)).addTo(map);
+                        indicateThisLocation(driver_position.lat, driver_position.lon);
+                    }
+
+                    function sendLocation() {
+                        var driver_loc = {
+                            DriverId : readCookie("userid"),
+                            lat : driver_position.lat,
+                            lon : driver_position.lon
+                        };
+                        var loc_form = {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify(driver_loc)
+                        };
+                        fetch("https://localhost:7092/Driver/PositionUpdate", loc_form)
+                            .then(function (response) {
+                                return response.json();
+                            })
+                            .then(function (data) {
+                                console.log("location response");
+                                console.log(data);
+                            });
+                    }
+
+                    getLocation(setLocation);
+
+                    setInterval(function () {
+                        getLocation(setLocation);
+                        sendLocation();
+                    }, 5000);
+                var retriveId;
+                    function sendConfirmation() {
+                        var req = {
+                            DriverId: readCookie("userid")
+                        };
+                        var req_form = {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify(req)
+                        };
+                        fetch("https://localhost:7092/Driver/ConfirmRequest", req_form)
+                            .then(function (response) {
+                                return response.json();
+                            })
+                            .then(function (data) {
+                                console.log("confirmation");
+                                console.log(data);
+                            });
+                    }
+
+                    function cencelRequest() {
+                        var req = {
+                            DriverId: readCookie("userid")
+                        };
+                        var req_form = {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify(req)
+                        };
+                        fetch("https://localhost:7092/Driver/CencelRequest", req_form)
+                            .then(function (response) {
+                                return response.json();
+                            })
+                            .then(function (data) {
+                                console.log("cencelation");
+                                console.log(data);
+                            });
+                    }
+
+                    function clearCard() {
+                        let cardContainer = document.getElementById("dashboard");
+                        while (cardContainer.firstChild) {
+                            cardContainer.removeChild(cardContainer.firstChild);
+                        }
+                    }
+
+                    function givePrompt(message) {
+                        let cardContainer = document.getElementById("dashboard");
+                        cardContainer.innerHTML = "<h5>" + message + "</h5>";
+                    }
+
+                    function addCard() {
+                        let cardContainer = document.getElementById("dashboard");
+                        
+                        let card = document.createElement("div");
+                        card.setAttribute("class", "card");
+                        let cardbody = document.createElement("div");
+                        cardbody.setAttribute("class", "card-body");
+                        let h5 = document.createElement("h5");
+                        h5.setAttribute("class", "card-title");
+                        h5.setAttribute("id", "fare");
+                        let p = document.createElement("p");
+                        p.setAttribute("class", "card-text");
+                        p.setAttribute("id", "time");
+
+                        let confirm = document.createElement("button");
+                        let cencel = document.createElement("button");
+                        confirm.setAttribute("class", "btn btn-primary");
+                        cencel.setAttribute("class", "btn btn-danger");
+                        confirm.setAttribute("id", "confirm");
+                        cencel.setAttribute("id", "cencel");
+                        confirm.innerHTML = "Confirm";
+                        cencel.innerHTML = "Cencel";
+
+                        cardbody.appendChild(h5);
+                        cardbody.appendChild(p);
+                        cardbody.appendChild(confirm);
+                        cardbody.appendChild(cencel);
+
+                        card.appendChild(cardbody);
+                        cardContainer.appendChild(card);
+
+                        confirm.addEventListener("click", function(){
+                            sendConfirmation();
+                            clearCard();
+                            givePrompt("Your rider is on the way and will contact you soon.");
+                            retriveId = setInterval(retriveRequest, 3000);
+                        });
+                        cencel.addEventListener("click", function() {
+                            cencelRequest();
+                            clearCard();
+                            givePrompt("You cenceled the ride.")
+                            retriveId = setInterval(retriveRequest, 3000);
+                        });
+                    }
+
+                    function retriveRequest() {
+                        var req = {
+                            DriverId : readCookie("userid")
+                        };
+                        var req_form = {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify(req)
+                        };
+                        fetch("https://localhost:7092/Driver/RequestList", req_form)
+                        .then(function(response){
+                            return response.json();
+                        })
+                        .then(function(data){
+                            console.log("request");
+                            console.log(data);
+                            if (data == null) {
+                                return;
+                            }
+                            clearCard();
+                            addCard();
+                            data.sLatitude = String(data.sLatitude);
+                            data.sLongitude = String(data.sLongitude);
+                            data.eLatitude = String(data.eLatitude);
+                            data.eLongitude = String(data.eLongitude);
+                            calFare("fare", data.sLatitude, data.sLongitude, data.eLatitude, data.eLongitude, data.status);
+                            getLocation(setLocation);
+                            calTime("time", data.sLatitude, data.sLongitude, driver_position.lat, driver_position.lon);
+                            clearInterval(retriveId);
+                        });
+                    }
+
+                    retriveId = setInterval(retriveRequest, 3000);
+                </script>
+            </div>
+      </div>
+      <div class="col-sm-6">
+        <div class="card" style="margin-right:20px;margin-left:20px;margin-top:8px;margin-bottom:20px;width:40vw;height:70vh;position:fixed" id="my-map">
+            <script src="~/js/Map.js"></script>
+        </div>
+      </div>
+    </div>
+    <script type="text/javascript">
+        function readCookie(cookieName) {
+            var name = cookieName + "=";
+            var decodedCookie = decodeURIComponent(document.cookie);
+            var cookieArray = decodedCookie.split(';');
+
+            for (var i = 0; i < cookieArray.length; i++) {
+                var cookie = cookieArray[i];
+                while (cookie.charAt(0) === ' ') {
+                    cookie = cookie.substring(1);
+                }
+                if (cookie.indexOf(name) === 0) {
+                    return cookie.substring(name.length, cookie.length);
+                }
+            }
+            return "";
+        }
+        function isCookieExpired(cookieName) {
+            var cookie = document.cookie.split(';').find(function (cookie) {
+                return cookie.trim().startsWith(cookieName + "=");
+            });
+
+            if (cookie) {
+                var cookieValue = cookie.split('=')[1];
+                var expirationDate = new Date(cookieValue);
+                var currentDate = new Date();
+
+                return expirationDate < currentDate;
+            }
+
+            return true; // If cookie is not found, assume it's expired
+        }
+        if (!isCookieExpired("username")) {
+            var username = readCookie("username");
+            document.getElementById("show_name").innerHTML = username;
+        }
+        else {
+            window.location = "https://localhost:7092";
+        }
+        function deleteCookie(cookieName) {
+            document.cookie = cookieName + "=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+        }
+
+        function do_logout() {
+            deleteCookie("username");
+            deleteCookie("userid");
+            deleteCookie("usertype");
+            window.location = "https://localhost:7092";
+        }
+    </script>
+
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="~/js/site.js" asp-append-version="true"></script>
+</body>
+</html>
