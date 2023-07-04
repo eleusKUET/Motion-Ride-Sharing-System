@@ -283,6 +283,7 @@ namespace Motion.Validation
         }
         public void ConfirmRequest(Guid did)
         {
+            SaveRide(did);
             string updateQuery = "UPDATE requests SET status = @Value1 WHERE did = @Condition";
             using (SqlConnection connection = new SqlConnection(Connection))
             {
@@ -297,6 +298,34 @@ namespace Motion.Validation
                     connection.Open();
                     int rowsAffected = command.ExecuteNonQuery();
                     connection.Close();
+                }
+            }
+        }
+        public void SaveRide(Guid did)
+        {
+            string query = "select * from requests where did=@condition and status='available'";
+            using (SqlConnection connection = new SqlConnection(Connection))
+            {
+                using (SqlCommand command = new SqlCommand(query, connection))
+                {
+                    command.Parameters.AddWithValue("@condition", did);
+                    connection.Open();
+                    using (SqlDataReader reader = command.ExecuteReader())
+                    {
+                        while (reader.Read())
+                        {
+                            var request = new Ride();
+                            request.Id = Guid.NewGuid();
+                            request.Did = reader.GetGuid(reader.GetOrdinal("Did"));
+                            request.Rid = reader.GetGuid(reader.GetOrdinal("Rid"));
+                            request.SLatitude = reader.GetFloat(reader.GetOrdinal("SLatitude"));
+                            request.SLongitude = reader.GetFloat(reader.GetOrdinal("SLongitude"));
+                            request.ELongitude = reader.GetFloat(reader.GetOrdinal("ELongitude"));
+                            request.ELatitude = reader.GetFloat(reader.GetOrdinal("ELatitude"));
+                            dbContext.Rides.Add(request);
+                            dbContext.SaveChanges();
+                        }
+                    }
                 }
             }
         }

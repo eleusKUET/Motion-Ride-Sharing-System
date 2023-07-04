@@ -62,6 +62,9 @@
                 </div>
                 <script type="text/javascript">
                     let driver_marker;
+                    let rider_marker;
+                    let routingControl;
+                    let remove_route;
                     let driver_position = {
                         
                         lat: 0,
@@ -74,8 +77,10 @@
                             driver_marker.remove();
                         }
                         console.log(driver_position);
-                        driver_marker = L.marker(new L.LatLng(driver_position.lat, driver_position.lon)).addTo(map);
-                        indicateThisLocation(driver_position.lat, driver_position.lon);
+                        if (!routingControl) {
+                            driver_marker = L.marker(new L.LatLng(driver_position.lat, driver_position.lon)).addTo(map);
+                            indicateThisLocation(driver_position.lat, driver_position.lon);
+                        }
                     }
 
                     function sendLocation() {
@@ -162,7 +167,7 @@
                         cardContainer.innerHTML = "<h5>" + message + "</h5>";
                     }
 
-                    function addCard() {
+                    function addCard(slat, slon) {
                         let cardContainer = document.getElementById("dashboard");
                         
                         let card = document.createElement("div");
@@ -194,9 +199,32 @@
                         cardContainer.appendChild(card);
 
                         confirm.addEventListener("click", function(){
+                            if (rider_marker) {
+                                rider_marker.remove();
+                            }
+                            if (driver_marker) {
+                                driver_marker.remove();
+                            }
+                            rider_marker = L.marker(new L.LatLng(slat, slon)).addTo(map);
+                            indicateThisLocation(slat, slon);
+                            getLocation(setLocation);
+                            if (routingControl) {
+                                remove_route = function () {
+                                    leafletData.getMap().then(function (map) {
+                                        map.removeControl(routingControl);
+                                    });
+                                };
+                            }
+                            routingControl = L.Routing.control({
+                                waypoints: [
+                                    L.latLng(driver_position.lat, driver_position.lon),
+                                    L.latLng(slat, slon)
+                                ],
+                                routeWhileDragging: true
+                            }).addTo(map);
                             sendConfirmation();
                             clearCard();
-                            givePrompt("Your rider is on the way and will contact you soon.");
+                            givePrompt("Rider is on the way and will contact you soon.<h3> Follow map to reach your rider</h3>");
                             retriveId = setInterval(retriveRequest, 3000);
                         });
                         cencel.addEventListener("click", function() {
@@ -229,11 +257,12 @@
                                 return;
                             }
                             clearCard();
-                            addCard();
+                            addCard(data.sLatitude, data.sLongitude);
                             data.sLatitude = String(data.sLatitude);
                             data.sLongitude = String(data.sLongitude);
                             data.eLatitude = String(data.eLatitude);
                             data.eLongitude = String(data.eLongitude);
+                            
                             calFare("fare", data.sLatitude, data.sLongitude, data.eLatitude, data.eLongitude, data.status);
                             getLocation(setLocation);
                             calTime("time", data.sLatitude, data.sLongitude, driver_position.lat, driver_position.lon);
