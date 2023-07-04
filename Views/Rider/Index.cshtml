@@ -169,6 +169,67 @@
 
                 </div>
                 <script type="text/javascript">
+                    var retriveId;
+                    
+                    function clearmCard() {
+                        let cardContainer = document.getElementById("rideinfo");
+                        while (cardContainer.firstChild) {
+                            cardContainer.removeChild(cardContainer.firstChild);
+                        }
+                    }
+
+                    function givePrompt(message) {
+                        let cardContainer = document.getElementById("rideinfo");
+                        cardContainer.innerHTML = "<h5>" + message + "</h5>";
+                    }
+
+                    function addmCard(Contact) {
+                        let cardContainer = document.getElementById("rideinfo");
+
+                        let card = document.createElement("div");
+                        card.setAttribute("class", "card");
+                        let cardbody = document.createElement("div");
+                        cardbody.setAttribute("class", "card-body");
+                        let h5 = document.createElement("h5");
+                        h5.setAttribute("class", "card-title");
+                        h5.setAttribute("id", "fare");
+                        let p = document.createElement("p");
+                        p.setAttribute("class", "card-text");
+                        p.setAttribute("id", "time");
+                        p.innerHTML = "Contact: " + Contact;
+                        h5.innerHTML = "Driver is arriving soon";
+
+                        let confirm = document.createElement("button");
+                        let cencel = document.createElement("button");
+                        confirm.setAttribute("class", "btn btn-dark");
+                        cencel.setAttribute("class", "btn btn-danger");
+                        confirm.setAttribute("id", "confirm");
+                        cencel.setAttribute("id", "cencel");
+                        confirm.innerHTML = "Arrived";
+                        cencel.innerHTML = "Cencel this ride";
+
+                        cardbody.appendChild(h5);
+                        cardbody.appendChild(p);
+                        cardbody.appendChild(confirm);
+                        cardbody.appendChild(cencel);
+
+                        card.appendChild(cardbody);
+                        cardContainer.appendChild(card);
+
+                        confirm.addEventListener("click", function () {
+                            //sendConfirmation();
+                            clearmCard();
+                            enable_button();
+                            givePrompt("You completed this ride.");
+                        });
+                        cencel.addEventListener("click", function () {
+                            //cencelRequest();
+                            clearmCard();
+                            enable_button();
+                            givePrompt("You cenceled the ride.");
+                        });
+                    }
+
                     function clearCard() {
                         let cardContainer = document.getElementById("rideinfo");
                         while (cardContainer.firstChild) {
@@ -187,11 +248,6 @@
                     function waiting() {
                         let cardContainer = document.getElementById("rideinfo");
                         cardContainer.innerHTML = '<span class="spinner-border spinner-border-lg" role="status" aria-hidden="true"></span>&nbsp;&nbsp;&nbsp;Waiting for confirmation...';
-                    }
-
-                    function requestConfirmed(Contact) {
-                        let cardContainer = document.getElementById("rideinfo");
-                        cardContainer.innerHTML = '<h5> Request confirmed. Your driver is arriving soon </h5><h5> Contact: ' + Contact + '</h5>';
                     }
 
                     function requestCenceled() {
@@ -284,7 +340,8 @@
                                 
                                 if (data.message == "confirmed") {
                                     clearCard();
-                                    requestConfirmed(data.contact);
+                                    
+                                    addmCard(data.contact);
                                     clearInterval(requestStatusId);
                                     clearRequest(DriverId);
                                 }
